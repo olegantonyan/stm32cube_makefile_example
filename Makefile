@@ -30,6 +30,7 @@ CC = $(TOOLCHAIN_PATH)/bin/arm-none-eabi-gcc
 LD =  $(TOOLCHAIN_PATH)/bin/arm-none-eabi-gcc
 AR =  $(TOOLCHAIN_PATH)/bin/arm-none-eabi-ar
 OBJCOPY =  $(TOOLCHAIN_PATH)/bin/arm-none-eabi-objcopy
+SIZE = $(TOOLCHAIN_PATH)/bin/arm-none-eabi-size
 
 ELF = $(BUILDDIR)/$(ARTEFACT).elf
 HEX = $(BUILDDIR)/$(ARTEFACT).hex
@@ -38,9 +39,9 @@ BIN = $(BUILDDIR)/$(ARTEFACT).bin
 CFLAGS  = -O1 -g -Wall -mcpu=cortex-m3 -mthumb -mfloat-abi=soft $(INCLUDES) $(DEFINES)
 LDFLAGS += -T$(LDSCRIPT) -mthumb -mcpu=cortex-m3 -mfloat-abi=soft -specs=nosys.specs -specs=nano.specs
 
-all: $(BIN) $(HEX)
+all: $(BIN) $(HEX) print_size
 
-flash: $(BIN)
+flash: all
 	st-flash write $(BIN) 0x8000000
 
 clean:
@@ -62,3 +63,6 @@ $(HEX): $(ELF)
 
 $(BIN): $(ELF)
 	$(OBJCOPY) -O binary $< $@
+
+print_size: $(ELF)
+	$(SIZE) -t $(ELF)
