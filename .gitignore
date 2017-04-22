@@ -1,2 +1,5 @@
 build/
 .mxproject
+.cproject
+.project
+stm32cube_makefile_example.xml
