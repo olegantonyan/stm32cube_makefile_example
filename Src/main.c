@@ -48,12 +48,12 @@
 
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
+#include "rf/rf_protocol.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart2_tx;
-DMA_HandleTypeDef hdma_usart2_rx;
+UART_HandleTypeDef huart3;
 
 osThreadId defaultTaskHandle;
 
@@ -64,8 +64,8 @@ osThreadId defaultTaskHandle;
 void SystemClock_Config(void);
 void Error_Handler(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_USART3_UART_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -90,8 +90,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_USART2_UART_Init();
+  MX_USART3_UART_Init();
 
   /* USER CODE BEGIN 2 */
   /* USER CODE END 2 */
@@ -206,21 +206,22 @@ static void MX_USART2_UART_Init(void)
 
 }
 
-/**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
+/* USART3 init function */
+static void MX_USART3_UART_Init(void)
 {
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
 
-  /* DMA interrupt init */
-  /* DMA1_Channel6_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
-  /* DMA1_Channel7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel7_IRQn);
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 1200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
 }
 
@@ -239,8 +240,8 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
@@ -263,7 +264,18 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-char uart_buff[128] = {0};
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
+{
+  if (UartHandle == &huart3) {
+    static volatile uint8_t buffer = 0;
+    if (on_rf_phy_byte_received(buffer)) {
+      HAL_UART_Transmit(&huart2, "hell\n", 5, 300u);
+    }
+    if (HAL_UART_Receive_IT(&huart3, &buffer, sizeof buffer) != HAL_OK) {
+      Error_Handler();
+    }
+  }
+}
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
@@ -273,42 +285,22 @@ void StartDefaultTask(void const * argument)
   MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN 5 */
-  if(HAL_UART_Receive_DMA(&huart2, uart_buff, 1) != HAL_OK)
-  {
+  uint8_t dummy = 0;
+  if (HAL_UART_Receive_IT(&huart3, &dummy, sizeof dummy) != HAL_OK) {
     Error_Handler();
   }
+  rf_init();
 
   while(1)
   {
-    osDelay(1000);
+    osDelay(500);
     const char * str = "hello world\n";
     CDC_Transmit_FS(str, strlen(str));
 
-
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
-
-    if(HAL_UART_Transmit_DMA(&huart2, str, strlen(str)) != HAL_OK)
-    {
-      Error_Handler();
-    }
-    while (HAL_UART_GetState(&huart2) != HAL_UART_STATE_READY);
-
   //  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
-  //  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_9);
+//    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_9);
   }
   /* USER CODE END 5 */
-}
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-//  __HAL_UART_FLUSH_DRREGISTER(&huart2);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_SET);
-}
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
 }
 
 /**

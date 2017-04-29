@@ -5,9 +5,7 @@ ARTEFACT = stm32cube_makefile_example
 
 SOURCES += $(shell find Drivers/STM32F1xx_HAL_Driver/Src/ -type f -iname '*.c')
 SOURCES += $(shell find Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/ -type f -iname '*.c')
-SOURCES += $(shell find Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src -type f -iname '*.c')
-SOURCES += $(shell find Middlewares/ST/STM32_USB_Device_Library/Core/Src -type f -iname '*.c')
-SOURCES += $(shell find Middlewares/Third_Party/FreeRTOS/Source/ -type f -iname '*.c')
+SOURCES += $(shell find Middlewares/ -type f -iname '*.c')
 SOURCES += $(shell find Src/ -type f -iname '*.c')
 SOURCES += $(shell find startup/ -type f -iname '*.s')
 
@@ -20,6 +18,7 @@ INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/
 INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/include/
 INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3/
 INCLUDES += -IInc
+INCLUDES += -ISrc/app
 
 DEFINES += -D$(CHIP)
 DEFINES += -DUSE_HAL_DRIVER
@@ -42,7 +41,7 @@ LDFLAGS += -T$(LDSCRIPT) -mthumb -mcpu=cortex-m3 -mfloat-abi=soft -specs=nosys.s
 all: $(BIN) $(HEX) print_size
 
 flash: all
-	st-flash write $(BIN) 0x8000000
+	st-flash --reset write $(BIN) 0x8000000
 
 clean:
 	rm -rf build/*
