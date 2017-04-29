@@ -12,9 +12,9 @@ static const uint8_t postamble[] = { 0x00, 0x7E, 0x7E };
 
 uint8_t rf_init() {
   //osMessageQDef_t queue_def = {  };
-  queue = osMessageCreate(NULL, 1);
-  osThreadDef(rf_thread, thread, osPriorityNormal, 0, 128);
-  rf_thread_handle = osThreadCreate(osThread(rf_thread), NULL);
+  //queue = osMessageCreate(NULL, 1);
+  //osThreadDef(rf_thread, thread, osPriorityNormal, 0, 128);
+  //rf_thread_handle = osThreadCreate(osThread(rf_thread), NULL);
 }
 
 uint8_t on_rf_phy_byte_received(uint8_t byte) {
@@ -24,7 +24,7 @@ uint8_t on_rf_phy_byte_received(uint8_t byte) {
   buffer[0] = byte;
 
   if (buffer[0] == 0x7E && buffer[1] == 0x7E && buffer[2] == 0x00) {
-    osSemaphoreRelease(sema);
+    //osSemaphoreRelease(sema);
     return 1u;
   }
   return 0;
@@ -32,7 +32,7 @@ uint8_t on_rf_phy_byte_received(uint8_t byte) {
 
 static void thread(void const *arg) {
   while (1) {
-    osSemaphoreWait(sema, osWaitForever);
+    //osSemaphoreWait(sema, osWaitForever);
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_9);
   }
 }

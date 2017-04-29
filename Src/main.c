@@ -47,8 +47,9 @@
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
-#include "usbd_cdc_if.h"
 #include "rf/rf_protocol.h"
+#include "emulated_keyboard/emulated_keyboard.h"
+//#include "usbd_hid.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -58,6 +59,7 @@ UART_HandleTypeDef huart3;
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
+//extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -285,6 +287,9 @@ void StartDefaultTask(void const * argument)
   MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN 5 */
+
+  emulated_keyboard_init();
+
   uint8_t dummy = 0;
   if (HAL_UART_Receive_IT(&huart3, &dummy, sizeof dummy) != HAL_OK) {
     Error_Handler();
@@ -293,11 +298,14 @@ void StartDefaultTask(void const * argument)
 
   while(1)
   {
-    osDelay(500);
-    const char * str = "hello world\n";
-    CDC_Transmit_FS(str, strlen(str));
+    osDelay(5000);
 
-  //  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
+    emulated_keyboard_write_char(ARROW_RIGHT); // h
+    emulated_keyboard_write_char(ARROW_LEFT);
+
+    //USBD_HID_SendReport(&hUsbDeviceFS, "A", 1);
+
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
 //    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_9);
   }
   /* USER CODE END 5 */
